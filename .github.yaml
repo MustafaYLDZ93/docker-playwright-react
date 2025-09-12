@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Run unit tests (Jest)
+      run: pnpm test
+
+    - name: Upload Jest HTML report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: jest-html-report
+        path: test-resultsJEST/jest-report.html
+
+    - name: Install Playwright browsers
+      run: pnpm exec playwright install --with-deps
+
+    - name: Start development server
+      run: pnpm run dev -- --port 5175 &
+      env:
+        CI: true
+
+    - name: Wait for server to be ready
+      uses: jakejarvis/wait-action@v0.1.1
+      with:
+        url: 'http://localhost:5175'
+        timeout: 10
+
+    - name: Run Playwright tests
+      run: pnpm exec playwright test
+
+    - name: Upload Playwright HTML report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-html-report
+        path: test-resultsUI/html-report
+    - name: Upload Playwright screenshots
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright-screenshots

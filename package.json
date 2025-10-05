@@ -9,7 +9,7 @@
     "test": "pnpm jest",
     "lint": "pnpm eslint .", 
     "test:ui": "pnpm exec playwright test --trace on",
-    "test2": "pnpm exec playwright test",
+    "test:e2e": "pnpm exec playwright test",
     "ui-report": "pnpm exec playwright show-report test-resultsUI/html-report --port 9444",
     "preview": "vite preview"
   },

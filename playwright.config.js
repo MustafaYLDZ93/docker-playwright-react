@@ -17,14 +17,11 @@ export default defineConfig({
     //  name: 'webkit',
     //  use: { browserName: 'webkit' },
     //},
-    //{
-    //  name: 'chromium',
-    //  use: { browserName: 'chromium' },
-    //},
     {
-      name: 'firefox',
-      use: { browserName: 'firefox' },
+      name: 'chromium',
+      use: { browserName: 'chromium' },
     },
+   
   ],
   webServer: {
     command: 'pnpm exec vite dev',

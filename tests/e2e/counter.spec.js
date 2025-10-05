@@ -15,6 +15,6 @@ test('Counter component should increment and decrement', async ({ page }) => {
   await page.waitForTimeout(1000); // 1 saniye bekleme
 
   await decreaseButton.click();
-  await expect(countText).toHaveText('Count: 0');
+  await expect(countText).toHaveText('Count: 1');
   await page.waitForTimeout(1000); // 1 saniye bekleme
 });

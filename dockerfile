@@ -1,6 +1,6 @@
-# 1. Aşama: Build (Derleme)
+# 1. Aşama: build (Derleme)
 # Playwright testleri için gerekli tarayıcı bağımlılıklarını içeren resmi Playwright Node imajını kullanıyoruz.
-FROM mcr.microsoft.com/playwright:v1.55.0-jammy
+FROM mcr.microsoft.com/playwright/node:lts as build
 
 # Çalışma dizinini ayarlayın
 WORKDIR /app
@@ -19,8 +19,9 @@ COPY . .
 # package.json dosyanızdaki "build" scriptini çalıştırır
 RUN pnpm build
 
-# 2. Aşama: Test (Playwright ve Jest)
+# 2. Aşama: test (Playwright ve Jest)
 # Playwright testleri ve diğer testler bu aşamada çalıştırılır
+# Önceki aşamadan kopyalama yaparken küçük harf 'build' aşamasına referans veriyoruz.
 FROM build as test
 
 # Playwright için test komutunu çalıştırın.
@@ -32,7 +33,7 @@ FROM build as test
 RUN pnpm test2
 
 # İsteğe bağlı: Jest/Unit testlerini çalıştırmak için
-# RUN pnpm test
+RUN pnpm test
 
 # Sonuç: Eğer test aşaması başarılı olursa, sonraki aşamaya geçilir.
 # Test raporları, isterseniz bu aşamada dışarıya (volume ile) aktarılabilir.
@@ -45,6 +46,7 @@ FROM node:lts-alpine as production
 WORKDIR /app
 
 # Önceki aşamadan derlenmiş build klasörünü kopyalayın
+# ARTIK KÜÇÜK HARF 'build' KULLANIYORUZ
 COPY --from=build /app/dist ./dist
 
 # Sadece üretim bağımlılıklarını kopyalayın (genellikle Vite projelerinde gerekmez ama iyi bir alışkanlıktır)
@@ -53,4 +55,4 @@ COPY --from=build /app/dist ./dist
 # Vite/React uygulamasını çalıştırmak için (preview scriptini kullanabilirsiniz)
 # Not: Preview komutu genellikle statik dosya sunucusu görevi görür
 EXPOSE 4173
-CMD ["pnpm", "preview", "--host"] 
+CMD ["pnpm", "preview", "--host"]

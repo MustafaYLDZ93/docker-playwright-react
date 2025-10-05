@@ -1,6 +1,6 @@
 # 1. Aşama: Build (Derleme)
 # Playwright testleri için gerekli tarayıcı bağımlılıklarını içeren resmi Playwright Node imajını kullanıyoruz.
-FROM mcr.microsoft.com/playwright/node:lts as build
+FROM mcr.microsoft.com/playwright:v1.55.0-jammy
 
 # Çalışma dizinini ayarlayın
 WORKDIR /app

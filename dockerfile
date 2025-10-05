@@ -1,58 +1,34 @@
-# 1. Aşama: build (Derleme)
-# Playwright testleri için gerekli tarayıcı bağımlılıklarını içeren resmi Playwright Node imajını kullanıyoruz.
-FROM mcr.microsoft.com/playwright/node:lts as build
+# --- Base image olarak Playwright + Node ---
+FROM mcr.microsoft.com/playwright:v1.55.0-jammy
 
-# Çalışma dizinini ayarlayın
+# --- Çalışma dizini ---
 WORKDIR /app
 
-# Bağımlılık dosyalarını kopyalayın
-COPY package.json pnpm-lock.yaml ./
+# --- Bağımlılıkları yükle ---
+# Önce package.json ve lock dosyalarını kopyala
+COPY package.json pnpm-lock.yaml* ./
+# pnpm'i global olarak kur
+RUN npm install -g pnpm
+RUN npm install -g serve
+# Bağımlılıkları yükle
+RUN pnpm install
 
-# pnpm install ile tüm bağımlılıkları kurun. 
-# Bu aşamada Playwright tarayıcıları da kurulacaktır.
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
-
-# Kalan uygulama dosyalarını kopyalayın
+# --- Kaynak dosyaları kopyala ---
 COPY . .
 
-# Uygulamayı derleyin (Build)
-# package.json dosyanızdaki "build" scriptini çalıştırır
-RUN pnpm build
+# --- Esbuild sürümünü fixle (React build için) ---
+# Eğer build işlemleri için ek bir esbuild sürümüne ihtiyacınız varsa,
+# bunu bağımlılıklar arasına dahil etmek daha doğru olabilir.
+# RUN pnpm install esbuild@latest -D
 
-# 2. Aşama: test (Playwright ve Jest)
-# Playwright testleri ve diğer testler bu aşamada çalıştırılır
-# Önceki aşamadan kopyalama yaparken küçük harf 'build' aşamasına referans veriyoruz.
-FROM build as test
+# --- React uygulamasını build et ---
+RUN pnpm run build
 
-# Playwright için test komutunu çalıştırın.
-# package.json'daki "test2" (Playwright) ve "test" (Jest) scriptlerini çalıştırıyoruz.
 
-# Playwright testlerini çalıştırmadan önce tarayıcıları doğru şekilde ayarladığından emin olun.
-# Playwright testleri genellikle başsız (headless) modda çalışır.
-# Bu komut, E2E testlerini çalıştırır.
-RUN pnpm test2
 
-# İsteğe bağlı: Jest/Unit testlerini çalıştırmak için
-RUN pnpm test
 
-# Sonuç: Eğer test aşaması başarılı olursa, sonraki aşamaya geçilir.
-# Test raporları, isterseniz bu aşamada dışarıya (volume ile) aktarılabilir.
+# --- Tek container’da React app + Playwright test ---
+# Serve'i arka planda başlat, 5 saniye bekle ve sonra testleri çalıştır.
+# serve'in çıktısını /dev/null'a yönlendirerek log karmaşasını azaltabiliriz.
+CMD ["sh", "-c", "pnpm run build && serve -s dist -l 5173 & sleep 5 && pnpm exec playwright test"]
 
-# 3. Aşama: Production (Üretim/Çalıştırma)
-# Uygulamanın sadece çalışması için gerekli minimum dosyaları içeren daha hafif bir imaj kullanın
-FROM node:lts-alpine as production
-
-# Gerekli dosya ve klasörleri kopyalayın
-WORKDIR /app
-
-# Önceki aşamadan derlenmiş build klasörünü kopyalayın
-# ARTIK KÜÇÜK HARF 'build' KULLANIYORUZ
-COPY --from=build /app/dist ./dist
-
-# Sadece üretim bağımlılıklarını kopyalayın (genellikle Vite projelerinde gerekmez ama iyi bir alışkanlıktır)
-# COPY --from=build /app/node_modules ./node_modules
-
-# Vite/React uygulamasını çalıştırmak için (preview scriptini kullanabilirsiniz)
-# Not: Preview komutu genellikle statik dosya sunucusu görevi görür
-EXPOSE 4173
-CMD ["pnpm", "preview", "--host"]
